@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+if [[ -n $1 ]]; then
+	case $@ in
+		-n)
+			dopts="-i system --replace=4755" # more options for dunstify
+			dunstify $dopts 'Loading...' # startup notify
+			date=$(date +'%d %B (%A)')
+			exact_time=$(date +%X)
+			disk=$( df -h | awk '{print $5}' | grep % | grep -v Use | sort -n | tail -1 | cut -d "%" -f1 - )
+			totalram=$(free -m | awk '{print $2}' | awk 'NR==2')
+			usedram=$(free -m | awk '{print $3}' | awk 'NR==2')
+			rampercent=$(echo "scale=2; $usedram / $totalram * 100" | bc | sed 's/.00//g')
+		    	swap=$(free -m | awk 'NR==3' | awk '{print $3}')
+		    	mpcsong=$(mpc current | sed 's/\&/and/g')
+		    	mpcstat=$(mpc status | awk 'NR==2' | awk '{print $1}' | tr -d [])
+		    	kernel=$(uname -r)
+		    	weather=$(weather.py)
+            		ans=$(dunstify \
+			-a 'status' \
+			-A 'cpsong,Google Song Name' \
+			$dopts \
+			"$kernel\n" \
+			" $exact_time  $date \n $disk%     $rampercent%     $swap MB\n\n<b>Weather:</b>\n$weather\n\n<b>mpd</b> is <b>$mpcstat</b>\n<i>$mpcsong</i>")
+			if [[ $ans == 'cpsong' ]]; then
+			    xdg-open "http://www.google.com/search?q=$mpcsong"
+			fi
+			;;
+		-h|*)
+            		echo "set dwm status clock"
+			echo "pass -n for extra info in a form of notification"
+			;;
+	esac
+else
+	while true; do
+
+	clock=$(fuzzy-clock.sh)
+
+	xsetroot -name "$clock"
+	sleep 1m
+	done &
+fi
